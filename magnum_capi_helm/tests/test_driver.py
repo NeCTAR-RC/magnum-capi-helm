@@ -1519,6 +1519,173 @@ class ClusterAPIDriverTest(base.DbTestCase):
         return_value=mock.ANY,
     )
     @mock.patch.object(driver.Driver, "_validate_allowed_flavor")
+    @mock.patch.object(
+        driver.Driver, "_ensure_certificate_secrets", autospec=True
+    )
+    @mock.patch.object(driver.Driver, "_create_appcred_secret", autospec=True)
+    @mock.patch.object(kubernetes.Client, "load", autospec=True)
+    @mock.patch.object(driver.Driver, "_get_image_details", autospec=True)
+    @mock.patch.object(helm.Client, "install_or_upgrade", autospec=True)
+    def test_create_cluster_control_plane_availability_zone(
+        self,
+        mock_install,
+        mock_image,
+        mock_load,
+        mock_appcred,
+        mock_certs,
+        mock_validate_allowed_flavor,
+        mock_storageclasses,
+        mock_get_keystone_auth_enabled,
+        mock_get_allowed_cidrs,
+    ):
+        mock_image.return_value = ("imageid1", "1.27.4", "ubuntu")
+        mock_client = mock.MagicMock(spec=kubernetes.Client)
+        mock_load.return_value = mock_client
+
+        self.cluster_obj.cluster_template.labels[
+            "control_plane_availability_zone"
+        ] = "az-1"
+
+        self.driver.create_cluster(self.context, self.cluster_obj, 10)
+
+        expected_values = self._get_cluster_helm_standard_values()
+        expected_values["controlPlane"]["omitFailureDomain"] = False
+        expected_values["controlPlane"]["failureDomains"] = ["az-1"]
+
+        mock_install.assert_called_once_with(
+            self.driver._helm_client,
+            "cluster-example-a-111111111111",
+            "openstack-cluster",
+            mock.ANY,
+            repo=CONF.capi_helm.helm_chart_repo,
+            version=CONF.capi_helm.default_helm_chart_version,
+            namespace="magnum-fakeproject",
+        )
+
+        helm_install_values = mock_install.call_args[0][3]
+        self.assertDictEqual(helm_install_values, expected_values)
+
+    @mock.patch.object(driver.Driver, "_get_allowed_cidrs")
+    @mock.patch.object(
+        driver.Driver, "_get_k8s_keystone_auth_enabled", return_value=False
+    )
+    @mock.patch.object(
+        driver.Driver,
+        "_storageclass_definitions",
+        return_value=mock.ANY,
+    )
+    @mock.patch.object(driver.Driver, "_validate_allowed_flavor")
+    @mock.patch.object(
+        driver.Driver, "_ensure_certificate_secrets", autospec=True
+    )
+    @mock.patch.object(driver.Driver, "_create_appcred_secret", autospec=True)
+    @mock.patch.object(kubernetes.Client, "load", autospec=True)
+    @mock.patch.object(driver.Driver, "_get_image_details", autospec=True)
+    @mock.patch.object(helm.Client, "install_or_upgrade", autospec=True)
+    def test_create_cluster_availability_zone(
+        self,
+        mock_install,
+        mock_image,
+        mock_load,
+        mock_appcred,
+        mock_certs,
+        mock_validate_allowed_flavor,
+        mock_storageclasses,
+        mock_get_keystone_auth_enabled,
+        mock_get_allowed_cidrs,
+    ):
+        mock_image.return_value = ("imageid1", "1.27.4", "ubuntu")
+        mock_client = mock.MagicMock(spec=kubernetes.Client)
+        mock_load.return_value = mock_client
+
+        self.cluster_obj.cluster_template.labels["availability_zone"] = "az-2"
+
+        self.driver.create_cluster(self.context, self.cluster_obj, 10)
+
+        expected_values = self._get_cluster_helm_standard_values()
+        expected_values["nodeGroupDefaults"]["failureDomain"] = "az-2"
+
+        mock_install.assert_called_once_with(
+            self.driver._helm_client,
+            "cluster-example-a-111111111111",
+            "openstack-cluster",
+            mock.ANY,
+            repo=CONF.capi_helm.helm_chart_repo,
+            version=CONF.capi_helm.default_helm_chart_version,
+            namespace="magnum-fakeproject",
+        )
+
+        helm_install_values = mock_install.call_args[0][3]
+        self.assertDictEqual(helm_install_values, expected_values)
+
+    @mock.patch.object(driver.Driver, "_get_allowed_cidrs")
+    @mock.patch.object(
+        driver.Driver, "_get_k8s_keystone_auth_enabled", return_value=False
+    )
+    @mock.patch.object(
+        driver.Driver,
+        "_storageclass_definitions",
+        return_value=mock.ANY,
+    )
+    @mock.patch.object(driver.Driver, "_validate_allowed_flavor")
+    @mock.patch.object(
+        driver.Driver, "_ensure_certificate_secrets", autospec=True
+    )
+    @mock.patch.object(driver.Driver, "_create_appcred_secret", autospec=True)
+    @mock.patch.object(kubernetes.Client, "load", autospec=True)
+    @mock.patch.object(driver.Driver, "_get_image_details", autospec=True)
+    @mock.patch.object(helm.Client, "install_or_upgrade", autospec=True)
+    def test_create_cluster_availability_zone_both(
+        self,
+        mock_install,
+        mock_image,
+        mock_load,
+        mock_appcred,
+        mock_certs,
+        mock_validate_allowed_flavor,
+        mock_storageclasses,
+        mock_get_keystone_auth_enabled,
+        mock_get_allowed_cidrs,
+    ):
+        mock_image.return_value = ("imageid1", "1.27.4", "ubuntu")
+        mock_client = mock.MagicMock(spec=kubernetes.Client)
+        mock_load.return_value = mock_client
+
+        self.cluster_obj.cluster_template.labels[
+            "control_plane_availability_zone"
+        ] = "az-1"
+        self.cluster_obj.cluster_template.labels["availability_zone"] = "az-2"
+
+        self.driver.create_cluster(self.context, self.cluster_obj, 10)
+
+        expected_values = self._get_cluster_helm_standard_values()
+        expected_values["controlPlane"]["omitFailureDomain"] = False
+        expected_values["controlPlane"]["failureDomains"] = ["az-1"]
+        expected_values["nodeGroupDefaults"]["failureDomain"] = "az-2"
+
+        mock_install.assert_called_once_with(
+            self.driver._helm_client,
+            "cluster-example-a-111111111111",
+            "openstack-cluster",
+            mock.ANY,
+            repo=CONF.capi_helm.helm_chart_repo,
+            version=CONF.capi_helm.default_helm_chart_version,
+            namespace="magnum-fakeproject",
+        )
+
+        helm_install_values = mock_install.call_args[0][3]
+        self.assertDictEqual(helm_install_values, expected_values)
+
+    @mock.patch.object(driver.Driver, "_get_allowed_cidrs")
+    @mock.patch.object(
+        driver.Driver, "_get_k8s_keystone_auth_enabled", return_value=False
+    )
+    @mock.patch.object(
+        driver.Driver,
+        "_storageclass_definitions",
+        return_value=mock.ANY,
+    )
+    @mock.patch.object(driver.Driver, "_validate_allowed_flavor")
     @mock.patch.object(driver.Driver, "_ensure_certificate_secrets")
     @mock.patch.object(driver.Driver, "_create_appcred_secret")
     @mock.patch.object(kubernetes.Client, "load")

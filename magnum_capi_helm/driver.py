@@ -970,6 +970,29 @@ class Driver(driver.Driver):
             },
         }
 
+        # Set control plane availability_zone details if they are provided
+        control_plane_availability_zone = self._label(
+            cluster, "control_plane_availability_zone", ""
+        )
+        if control_plane_availability_zone:
+            az_details = {
+                "controlPlane": {
+                    "omitFailureDomain": False,
+                    "failureDomains": [control_plane_availability_zone],
+                },
+            }
+            values = helm.mergeconcat(values, az_details)
+
+        # Set worker availability_zone details if they are provided
+        availability_zone = self._label(cluster, "availability_zone", "")
+        if availability_zone:
+            az_details = {
+                "nodeGroupDefaults": {
+                    "failureDomain": availability_zone,
+                },
+            }
+            values = helm.mergeconcat(values, az_details)
+
         # Add boot disk details, if defined in config file.
         # Helm chart defaults to ephemeral disks, if unset.
         boot_volume_type = self._label(
