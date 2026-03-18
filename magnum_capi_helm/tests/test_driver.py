@@ -1124,9 +1124,9 @@ class ClusterAPIDriverTest(base.DbTestCase):
 
     def test_get_kube_dash_enabled_from_template(self):
         # Check default if label is not present
-        self.assertTrue(self.driver._get_kube_dash_enabled(self.cluster_obj))
+        self.assertFalse(self.driver._get_kube_dash_enabled(self.cluster_obj))
 
-        for val in ["false", "False", "FALSE"]:
+        for val in ["true", "True", "TRUE"]:
 
             self.cluster_obj.cluster_template.labels[
                 "kube_dashboard_enabled"
@@ -1134,7 +1134,7 @@ class ClusterAPIDriverTest(base.DbTestCase):
 
             result = self.driver._get_kube_dash_enabled(self.cluster_obj)
 
-            self.assertFalse(result)
+            self.assertTrue(result)
 
     def test_get_chart_version_from_config(self):
         version = self.driver._get_chart_version(self.cluster_obj)
@@ -1185,7 +1185,7 @@ class ClusterAPIDriverTest(base.DbTestCase):
             },
             "addons": {
                 "monitoring": {"enabled": False},
-                "kubernetesDashboard": {"enabled": True},
+                "kubernetesDashboard": {"enabled": False},
                 "ingress": {"enabled": False},
                 "openstack": {
                     "csiCinder": mock.ANY,

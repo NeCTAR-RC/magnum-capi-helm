@@ -588,7 +588,7 @@ class Driver(driver.Driver):
 
     def _get_kube_dash_enabled(self, cluster):
         #  NOTE(mkjpryor) default on, like the heat driver
-        return self._get_label_bool(cluster, "kube_dashboard_enabled", True)
+        return self._get_label_bool(cluster, "kube_dashboard_enabled", False)
 
     def _get_autoheal_enabled(self, cluster):
         return self._get_label_bool(cluster, "auto_healing_enabled", True)
