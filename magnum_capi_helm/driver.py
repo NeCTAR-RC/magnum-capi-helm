@@ -992,6 +992,12 @@ class Driver(driver.Driver):
                 )
                 if machine_root_volume:
                     nodegroup_item["machineRootVolume"] = machine_root_volume
+                node_labels = getattr(ng, "node_labels", None)
+                if node_labels:
+                    nodegroup_item["nodeLabels"] = node_labels
+                node_taints = getattr(ng, "node_taints", None)
+                if node_taints:
+                    nodegroup_item["nodeTaints"] = node_taints
                 if self._get_autoscale_enabled(cluster, ng):
                     values = self._get_autoscale_values(cluster, ng)
                     nodegroup_item = helm.mergeconcat(nodegroup_item, values)
